@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package io.bimurto.groovyssh;
 
 import java.io.IOException;
 

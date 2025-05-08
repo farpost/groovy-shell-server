@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package io.bimurto.groovyssh;
 
 import org.apache.sshd.common.channel.exception.SshChannelException;
 

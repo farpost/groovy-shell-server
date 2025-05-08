@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package io.bimurto.groovyssh;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
