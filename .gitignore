@@ -11,5 +11,5 @@ host.key
 .gradle
 .idea
 
-groovy-shell-server/build/
+build/
 
