@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "io.bimurto"
@@ -12,8 +13,8 @@ repositories {
 dependencies {
     implementation("org.codehaus.groovy:groovy:3.0.24")
     implementation("org.codehaus.groovy:groovy-groovysh:3.0.24")
-    compileOnly("org.springframework:spring-context:4.3.3.RELEASE")
-    implementation("org.apache.sshd:sshd-core:2.7.0")
+    compileOnly("org.springframework:spring-context:6.2.6")
+    implementation("org.apache.sshd:sshd-core:2.15.0")
     implementation("jline:jline:2.14.6")
 }
 
