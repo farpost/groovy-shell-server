@@ -71,15 +71,22 @@ Integrating with Spring
 -----------------------
 You can easily integrate Groovy Shell with Spring container:
 
-	<bean class="io.bimurto.groovyssh.spring.GroovyShellServiceBean"
-		p:port="6789"
-		p:launchAtStart="true"
-		p:publishContextBeans="true"
-		p:bindings-ref="bindings"/>
 
-	<u:map id="bindings">
-		<entry key="foo" value="bar"/>
-	</u:map>
+    @Bean
+    @Profile("!test")
+    public GroovyShellServiceBean groovyShellServiceBean() {
+        GroovyShellServiceBean groovyShellServiceBean = new GroovyShellServiceBean();
+        groovyShellServiceBean.setIdleTimeOut(Duration.ofMinutes(groovyShellTimeoutMinutes).toMillis());
+        groovyShellServiceBean.setPort(groovyShellPort);
+        groovyShellServiceBean.setLaunchAtStart(true);
+        groovyShellServiceBean.setPublishContextBeans(true);
+        groovyShellServiceBean.setBindings(new HashMap<String, Object>() {{
+            put("foo", obj1);
+            put("bar", obj2);
+        }});
+        return groovyShellServiceBean;
+    }
+
 
 When `publishContextBeans` is true all context beans are published to groovy shell context. So bean with id `foo`
 will be available as `foo` in groovy shell. Also reference to the `ApplicationContext` is added to bindings implicitly
@@ -87,11 +94,6 @@ as `ctx`. So in shell you can get objects from container by id or type (e.g. `ct
 
 It is also possible to enable password authentication by setting `passwordAuthenticator` property on `GroovyShellServiceBean`.
 
-### Simple run
-
-In order to simple run applications you can use `maven-exec` plugin:
-
-	mvn -f groovy-shell-server/pom.xml exec:java -Dexec.mainClass=io.bimurto.groovyssh.Main
 
 Management
 ----------

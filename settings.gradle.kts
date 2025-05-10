@@ -1,3 +1,2 @@
 
-rootProject.name = "groovy-shell-parent"
-include("groovy-shell-server")
+rootProject.name = "groovy-shell-server"
