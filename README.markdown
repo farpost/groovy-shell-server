@@ -81,6 +81,22 @@ You can easily integrate Groovy Shell with Spring container:
 		<entry key="foo" value="bar"/>
 	</u:map>
 
+For modern annotation based bean declaration you can use:
+
+    @Bean
+    public GroovyShellServiceBean groovyShellServiceBean() {
+        GroovyShellServiceBean groovyShellServiceBean = new GroovyShellServiceBean();
+        groovyShellServiceBean.setIdleTimeOut(Duration.ofMinutes(groovyShellTimeoutMinutes).toMillis());
+        groovyShellServiceBean.setPort(groovyShellPort);
+        groovyShellServiceBean.setLaunchAtStart(true);
+        groovyShellServiceBean.setPublishContextBeans(true);
+        groovyShellServiceBean.setBindings(new HashMap<String, Object>() {{
+            put("foo", obj1);
+            put("bar", obj2);
+        }});
+        return groovyShellServiceBean;
+    }
+
 When `publishContextBeans` is true all context beans are published to groovy shell context. So bean with id `foo`
 will be available as `foo` in groovy shell. Also reference to the `ApplicationContext` is added to bindings implicitly
 as `ctx`. So in shell you can get objects from container by id or type (e.g. `ctx.getBean('id')`).
