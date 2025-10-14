@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-				 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>groovy-shell-server</artifactId>
 	<packaging>jar</packaging>
@@ -11,17 +11,17 @@
 	</parent>
 
 	<properties>
-		<versions.groovy>3.0.8</versions.groovy>
+		<versions.groovy>4.0.28</versions.groovy>
 	</properties>
 
 	<dependencies>
 		<dependency>
-			<groupId>org.codehaus.groovy</groupId>
+			<groupId>org.apache.groovy</groupId>
 			<artifactId>groovy</artifactId>
 			<version>${versions.groovy}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.codehaus.groovy</groupId>
+			<groupId>org.apache.groovy</groupId>
 			<artifactId>groovy-groovysh</artifactId>
 			<version>${versions.groovy}</version>
 		</dependency>
