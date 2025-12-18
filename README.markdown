@@ -16,7 +16,26 @@ Groovy shell server uses `groovysh` API inside, so all features of `groovysh` (a
 Installation
 ------------
 
-Just include following dependency in your `pom.xml`:
+### Java 21+
+
+Current versions of the library require JDK 21 or higher. Include the following dependency in your `pom.xml`:
+
+    <repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+
+	<dependency>
+		<groupId>com.github.farpost</groupId>
+		<artifactId>groovy-shell-server</artifactId>
+		<version>2.2.6-jdk21</version>
+	</dependency>
+
+### Java 8 / Legacy
+
+If you are running on an older JVM (Java 8 - 17), please use the `2.2.x` releases (e.g., `2.2.1`). These versions are stable but do not include features requiring newer JDKs.
 
 	<dependency>
 		<groupId>me.bazhenov.groovy-shell</groupId>

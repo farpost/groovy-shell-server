@@ -70,7 +70,7 @@ class GroovyShellCommand implements Command {
 
     IO io = new IO(in, out, err);
     io.setVerbosity(DEBUG);
-    Groovysh shell = new Groovysh(createBinding(bindings, out, err), io);
+    Groovysh shell = new Groovysh(this.getClass().getClassLoader(), createBinding(bindings, out, err), io);
     shell.setErrorHook(new Closure<Object>(this) {
       @Override
       public Object call(Object... args) {
