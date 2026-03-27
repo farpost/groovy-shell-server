@@ -19,9 +19,9 @@ Installation
 Just include following dependency in your `pom.xml`:
 
 	<dependency>
-		<groupId>me.bazhenov.groovy-shell</groupId>
-		<artifactId>groovy-shell-server</artifactId>
-		<version>2.2.1</version>
+		<groupId>com.farpost</groupId>
+		<artifactId>groovy-shell</artifactId>
+		<version>2.2.4</version>
 	</dependency>
 
 Using
@@ -63,7 +63,7 @@ As of 1.5 Groovy shell server use plain `ssh` as a client. So connecting to a gr
 	groovy:000>
 
 By default, no authentication is required (any username is allowed to open a SSH connection). You can enable password authentication by creating your own implementation of `org.apache.sshd.server.PasswordAuthenticator` interface and passing an instance to server:
-	
+
 	PasswordAuthenticator myPasswordAuthenticator = new MyPasswordAuthenticator();
 	service.setPasswordAuthenticator(myPasswordAuthenticator);
 
@@ -91,7 +91,7 @@ It is also possible to enable password authentication by setting `passwordAuthen
 
 In order to simple run applications you can use `maven-exec` plugin:
 
-	mvn -f groovy-shell-server/pom.xml exec:java -Dexec.mainClass=me.bazhenov.groovysh.Main
+	mvn -f groovy-shell/pom.xml exec:java -Dexec.mainClass=me.bazhenov.groovysh.Main
 
 Management
 ----------
@@ -100,3 +100,76 @@ What if a well-meaning developer fires up a remote shell and accidentally execut
 each GroovyShellService instance registers itself with the default MBeanServer and provides a "killAllClients" operation to kill
 any open client sockets and stop the associated client threads. Thus you can connect with jconsole or your favorite JMX frontend
 to resolve this issue if it arises.
+
+Publishing to Maven Central
+----------------------------
+
+The library is published to Maven Central via [Sonatype Central Portal](https://central.sonatype.com).
+
+### How it works
+
+Publishing involves three independent mechanisms:
+
+- **Namespace verification** — one-time DNS TXT record on `farpost.com` proves ownership of `com.farpost` groupId
+- **GPG signing** — every artifact is signed with a private key; Maven Central verifies signatures against public keys on keyservers
+- **Sonatype token** — authenticates the upload to central.sonatype.com
+
+### Prerequisites
+
+1. **Sonatype token.** Log in to [central.sonatype.com](https://central.sonatype.com), go to Account, click "Generate User Token". Save the username and password — they are shown only once. Add them to `~/.m2/settings.xml`:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>central</id>
+      <username>TOKEN_USERNAME</username>
+      <password>TOKEN_PASSWORD</password>
+    </server>
+  </servers>
+</settings>
+```
+
+2. **GPG key.** The key is stored in `.keys/` directory (gitignored). No system-level installation needed — the Makefile uses it via `GNUPGHOME`.
+
+	If setting up on a new machine, just copy the `.keys/` directory from a colleague or from company secrets.
+
+### Publishing a release
+
+```
+make deploy
+```
+
+This runs `./mvnw clean deploy -Prelease` which:
+
+1. Compiles code and creates `.jar`
+2. Generates `-sources.jar` and `-javadoc.jar`
+3. Signs everything with GPG (`.asc` files)
+4. Uploads to Sonatype Central Portal
+5. Waits for validation and auto-publishes to Maven Central
+
+### GPG key details
+
+| Parameter   | Value                                   |
+|-------------|-----------------------------------------|
+| Owner       | FarPost <dev@farpost.com>               |
+| Algorithm   | RSA 4096                                |
+| Expires     | 2028-03-26 (extend before expiry)       |
+| Keyservers  | keyserver.ubuntu.com, keys.openpgp.org  |
+| Location    | `.keys/gpg-home/` (GNUPGHOME)           |
+
+To extend the key before expiry:
+
+```
+GNUPGHOME=.keys/gpg-home gpg --edit-key FarPost
+> expire
+> (set new expiry)
+> save
+GNUPGHOME=.keys/gpg-home gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
+```
+
+### Maven Central coordinates
+
+| Old (deprecated)                 | New                          |
+|----------------------------------|------------------------------|
+| `me.bazhenov.groovy-shell:groovy-shell-server` | `com.farpost:groovy-shell` |
