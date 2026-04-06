@@ -116,23 +116,18 @@ Publishing involves three independent mechanisms:
 
 ### Prerequisites
 
-1. **Sonatype token.** Log in to [central.sonatype.com](https://central.sonatype.com), go to Account, click "Generate User Token". Save the username and password — they are shown only once. Add them to `~/.m2/settings.xml`:
+1. **Sonatype token.** Log in to [central.sonatype.com](https://central.sonatype.com), go to Account, click "Generate User Token". Save the username and password — they are shown only once. Export them as environment variables before running deploy:
 
-```xml
-<settings>
-  <servers>
-    <server>
-      <id>central</id>
-      <username>TOKEN_USERNAME</username>
-      <password>TOKEN_PASSWORD</password>
-    </server>
-  </servers>
-</settings>
-```
+	```
+	export SONATYPE_USERNAME=<token username>
+	export SONATYPE_PASSWORD=<token password>
+	```
 
-2. **GPG key.** The key is stored in `.keys/` directory (gitignored). No system-level installation needed — the Makefile uses it via `GNUPGHOME`.
+	The deploy uses a project-local `.mvn/settings.xml` that reads these env vars — no need to edit `~/.m2/settings.xml`.
 
-	If setting up on a new machine, just copy the `.keys/` directory from a colleague or from company secrets.
+2. **GPG key.** The signing key is stored in the `.keys/` directory (gitignored). No system-level GPG import needed — the Makefile uses the local `GNUPGHOME` directly.
+
+	If setting up on a new machine, just copy the `.keys/` directory from a teammate or from company secrets.
 
 ### Publishing a release
 
@@ -140,13 +135,14 @@ Publishing involves three independent mechanisms:
 make deploy
 ```
 
-This runs `./mvnw clean deploy -Prelease` which:
+This runs `./mvnw clean deploy -Prelease -s .mvn/settings.xml -Drevision=<calver>` which:
 
-1. Compiles code and creates `.jar`
-2. Generates `-sources.jar` and `-javadoc.jar`
-3. Signs everything with GPG (`.asc` files)
-4. Uploads to Sonatype Central Portal
-5. Waits for validation and auto-publishes to Maven Central
+1. Generates a CalVer version (`YYYY.MM.DD.HHMM`) — every release is unique, no manual version bumps
+2. Compiles code and creates `.jar`
+3. Generates `-sources.jar` and `-javadoc.jar`
+4. Signs everything with GPG (`.asc` files)
+5. Uploads to Sonatype Central Portal
+6. Waits for validation and auto-publishes to Maven Central
 
 ### GPG key details
 

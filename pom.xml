@@ -5,7 +5,7 @@
 	<groupId>com.farpost</groupId>
 	<artifactId>groovy-shell-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>2.2.4</version>
+	<version>${revision}</version>
 	<name>Groovy Shell</name>
 	<url>https://github.com/farpost/groovy-shell-server</url>
 
@@ -17,6 +17,7 @@
 	</organization>
 
 	<properties>
+		<revision>0.0.0-LOCAL</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
@@ -24,7 +25,7 @@
 	<scm>
 		<url>https://github.com/farpost/groovy-shell-server</url>
 		<connection>scm:git:git://github.com/farpost/groovy-shell-server.git</connection>
-		<developerConnection>scm:git:ssh://github.com:farpost/groovy-shell-server.git</developerConnection>
+		<developerConnection>scm:git:ssh://git@github.com/farpost/groovy-shell-server.git</developerConnection>
 	</scm>
 
 	<developers>
@@ -59,6 +60,31 @@
 					<source>1.8</source>
 					<target>1.8</target>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.6.0</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				</configuration>
+				<executions>
+					<execution>
+						<id>flatten</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>flatten</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flatten.clean</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
