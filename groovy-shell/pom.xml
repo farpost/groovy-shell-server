@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>com.farpost</groupId>
 		<artifactId>groovy-shell-parent</artifactId>
-		<version>2.2.4-SNAPSHOT</version>
+		<version>2.2.4</version>
 	</parent>
 
 	<properties>

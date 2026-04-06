@@ -6,4 +6,6 @@ MAVEN_OPTS=--add-opens=java.base/java.util=ALL-UNNAMED\
 	--add-opens=java.desktop/java.awt.font=ALL-UNNAMED
 
 deploy:
-	MAVEN_OPTS="${MAVEN_OPTS}" GNUPGHOME="$(CURDIR)/.keys/gpg-home" ./mvnw clean deploy -Prelease
+	rm -rf /tmp/gpg-deploy && cp -r "$(CURDIR)/.keys/gpg-home" /tmp/gpg-deploy && chmod 700 /tmp/gpg-deploy
+	MAVEN_OPTS="${MAVEN_OPTS}" GNUPGHOME="/tmp/gpg-deploy" ./mvnw clean deploy -Prelease -s .mvn/settings.xml
+	rm -rf /tmp/gpg-deploy
