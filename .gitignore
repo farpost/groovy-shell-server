@@ -8,3 +8,5 @@ target
 .settings
 pom.xml.versionsBackup
 host.key
+/.keys
+.flattened-pom.xml

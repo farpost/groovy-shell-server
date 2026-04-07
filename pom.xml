@@ -2,29 +2,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>me.bazhenov.groovy-shell</groupId>
+	<groupId>com.farpost</groupId>
 	<artifactId>groovy-shell-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>2.2.4-SNAPSHOT</version>
+	<version>${revision}</version>
 	<name>Groovy Shell</name>
-	<url>https://github.com/bazhenov/groovy-shell-server</url>
+	<url>https://github.com/farpost/groovy-shell-server</url>
 
-	<description>Groovy shell server</description>
+	<description>Groovy shell server allows to start Groovy Shell inside your application for debug and diagnostic purposes</description>
 
 	<organization>
 		<name>FarPost</name>
-		<url>http://farpost.com</url>
+		<url>https://farpost.com</url>
 	</organization>
 
 	<properties>
+		<revision>0.0.0-LOCAL</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
 
 	<scm>
-		<url>git@github.com:bazhenov/groovy-shell-server</url>
-		<connection>scm:git:git@github.com:bazhenov/groovy-shell-server.git</connection>
-		<developerConnection>scm:git:git@github.com:bazhenov/groovy-shell-server.git</developerConnection>
+		<url>https://github.com/farpost/groovy-shell-server</url>
+		<connection>scm:git:git://github.com/farpost/groovy-shell-server.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/farpost/groovy-shell-server.git</developerConnection>
 	</scm>
 
 	<developers>
@@ -35,27 +36,16 @@
 		</developer>
 	</developers>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
-
 	<licenses>
 		<license>
-			<name>The Apache Software License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
 
 	<modules>
-		<module>groovy-shell-server</module>
+		<module>groovy-shell</module>
 	</modules>
 
 	<build>
@@ -72,27 +62,26 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>2.2.1</version>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.6.0</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				</configuration>
 				<executions>
 					<execution>
-						<phase>install</phase>
+						<id>flatten</id>
+						<phase>process-resources</phase>
 						<goals>
-							<goal>jar</goal>
+							<goal>flatten</goal>
 						</goals>
 					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.9.1</version>
-				<executions>
 					<execution>
-						<phase>install</phase>
+						<id>flatten.clean</id>
+						<phase>clean</phase>
 						<goals>
-							<goal>jar</goal>
+							<goal>clean</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -102,45 +91,66 @@
 
 	<profiles>
 		<profile>
-			<id>nexus-staging</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nexus-staging-maven-plugin</artifactId>
-						<version>1.6.8</version>
-						<extensions>true</extensions>
-						<configuration>
-							<serverId>ossrh</serverId>
-							<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-							<autoReleaseAfterClose>true</autoReleaseAfterClose>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>gpg</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
+			<id>release</id>
 			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<version>1.6</version>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.3.1</version>
 						<executions>
 							<execution>
-								<phase>install</phase>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.6.3</version>
+						<executions>
+							<execution>
+								<id>attach-javadoc</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.2.7</version>
+						<configuration>
+							<gpgArguments>
+								<arg>--batch</arg>
+								<arg>--pinentry-mode</arg>
+								<arg>loopback</arg>
+							</gpgArguments>
+						</configuration>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
 								<goals>
 									<goal>sign</goal>
 								</goals>
 							</execution>
 						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.7.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>true</autoPublish>
+							<waitUntil>published</waitUntil>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
