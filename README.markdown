@@ -1,6 +1,8 @@
 Groovysh Server
 ===============
 
+[![Maven Central](https://img.shields.io/maven-central/v/com.farpost/groovy-shell.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.farpost/groovy-shell)
+
 Introduction
 ------------
 
@@ -16,12 +18,12 @@ Groovy shell server uses `groovysh` API inside, so all features of `groovysh` (a
 Installation
 ------------
 
-Just include following dependency in your `pom.xml`:
+Just include following dependency in your `pom.xml` (latest version is shown by the Maven Central badge above):
 
 	<dependency>
 		<groupId>com.farpost</groupId>
 		<artifactId>groovy-shell</artifactId>
-		<version>2.2.4</version>
+		<version>LATEST_VERSION_FROM_BADGE</version>
 	</dependency>
 
 Using
