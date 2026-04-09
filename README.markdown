@@ -71,7 +71,7 @@ Integrating with Spring
 -----------------------
 You can easily integrate Groovy Shell with Spring container:
 
-	<bean class="me.bazhenov.groovysh.spring.GroovyShellServiceBean"
+	<bean class="com.farpost.groovyshell.spring.GroovyShellServiceBean"
 		p:port="6789"
 		p:launchAtStart="true"
 		p:publishContextBeans="true"
@@ -91,7 +91,7 @@ It is also possible to enable password authentication by setting `passwordAuthen
 
 In order to simple run applications you can use `maven-exec` plugin:
 
-	mvn -f groovy-shell/pom.xml exec:java -Dexec.mainClass=me.bazhenov.groovysh.Main
+	./mvnw -f groovy-shell/pom.xml exec:java -Dexec.mainClass=com.farpost.groovyshell.Main
 
 Management
 ----------

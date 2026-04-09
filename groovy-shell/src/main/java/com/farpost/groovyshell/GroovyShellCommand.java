@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package com.farpost.groovyshell;
 
 import groovy.lang.Binding;
 import groovy.lang.Closure;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singletonList;
-import static me.bazhenov.groovysh.GroovyShellService.SHELL_KEY;
+import static com.farpost.groovyshell.GroovyShellService.SHELL_KEY;
 import static org.codehaus.groovy.tools.shell.IO.Verbosity.DEBUG;
 
 class GroovyShellCommand implements Command {

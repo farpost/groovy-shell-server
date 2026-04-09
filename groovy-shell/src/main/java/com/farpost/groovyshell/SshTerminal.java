@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package com.farpost.groovyshell;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
