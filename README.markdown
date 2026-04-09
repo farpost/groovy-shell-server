@@ -1,6 +1,8 @@
 Groovysh Server
 ===============
 
+[![Maven Central](https://img.shields.io/maven-central/v/com.farpost/groovy-shell.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.farpost/groovy-shell)
+
 Introduction
 ------------
 
@@ -16,12 +18,12 @@ Groovy shell server uses `groovysh` API inside, so all features of `groovysh` (a
 Installation
 ------------
 
-Just include following dependency in your `pom.xml`:
+Just include following dependency in your `pom.xml` (latest version is shown by the Maven Central badge above):
 
 	<dependency>
 		<groupId>com.farpost</groupId>
 		<artifactId>groovy-shell</artifactId>
-		<version>2.2.4</version>
+		<version>LATEST_VERSION_FROM_BADGE</version>
 	</dependency>
 
 Using
@@ -71,7 +73,7 @@ Integrating with Spring
 -----------------------
 You can easily integrate Groovy Shell with Spring container:
 
-	<bean class="me.bazhenov.groovysh.spring.GroovyShellServiceBean"
+	<bean class="com.farpost.groovysh.spring.GroovyShellServiceBean"
 		p:port="6789"
 		p:launchAtStart="true"
 		p:publishContextBeans="true"
@@ -91,7 +93,7 @@ It is also possible to enable password authentication by setting `passwordAuthen
 
 In order to simple run applications you can use `maven-exec` plugin:
 
-	mvn -f groovy-shell/pom.xml exec:java -Dexec.mainClass=me.bazhenov.groovysh.Main
+	./mvnw -f groovy-shell/pom.xml exec:java -Dexec.mainClass=com.farpost.groovysh.Main
 
 Management
 ----------
@@ -164,8 +166,3 @@ GNUPGHOME=.keys/gpg-home gpg --edit-key FarPost
 GNUPGHOME=.keys/gpg-home gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
 ```
 
-### Maven Central coordinates
-
-| Old (deprecated)                 | New                          |
-|----------------------------------|------------------------------|
-| `me.bazhenov.groovy-shell:groovy-shell-server` | `com.farpost:groovy-shell` |
