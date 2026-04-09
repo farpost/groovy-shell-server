@@ -131,7 +131,7 @@ public class GroovyShellService {
    * API. So once written it should be removed by hand (you can use groovysh <code>:set</code>
    * command).
    *
-   * @see <a href="https://github.com/bazhenov/groovy-shell-server/issues/26">groovy-shell-server
+   * @see <a href="https://github.com/farpost/groovy-shell-server/issues/26">groovy-shell-server
    * does not work with jdk11</a>
    */
   public void setDisableImportCompletions(boolean disableImportCompletions) {

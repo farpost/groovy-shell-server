@@ -164,8 +164,3 @@ GNUPGHOME=.keys/gpg-home gpg --edit-key FarPost
 GNUPGHOME=.keys/gpg-home gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
 ```
 
-### Maven Central coordinates
-
-| Old (deprecated)                 | New                          |
-|----------------------------------|------------------------------|
-| `me.bazhenov.groovy-shell:groovy-shell-server` | `com.farpost:groovy-shell` |
