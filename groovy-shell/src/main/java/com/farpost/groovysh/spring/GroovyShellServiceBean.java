@@ -1,6 +1,6 @@
-package com.farpost.groovyshell.spring;
+package com.farpost.groovysh.spring;
 
-import com.farpost.groovyshell.GroovyShellService;
+import com.farpost.groovysh.GroovyShellService;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanIsAbstractException;

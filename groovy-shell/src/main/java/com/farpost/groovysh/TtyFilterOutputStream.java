@@ -1,4 +1,4 @@
-package com.farpost.groovyshell;
+package com.farpost.groovysh;
 
 import org.apache.sshd.common.channel.exception.SshChannelException;
 
