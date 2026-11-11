@@ -1,0 +1,15 @@
+<configuration>
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- ShellClient accepts any server host key on purpose: the server generates a new key on every run,
+	     so there is nothing to verify against. Hide the warning AcceptAllServerKeyVerifier logs per connection. -->
+	<logger name="org.apache.sshd.client.keyverifier" level="ERROR"/>
+
+	<root level="WARN">
+		<appender-ref ref="STDOUT"/>
+	</root>
+</configuration>
