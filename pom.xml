@@ -1,31 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>me.bazhenov.groovy-shell</groupId>
+	<groupId>com.farpost</groupId>
 	<artifactId>groovy-shell-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>2.2.6-jdk21</version>
+	<version>${revision}</version>
 	<name>Groovy Shell</name>
-	<url>https://github.com/bazhenov/groovy-shell-server</url>
+	<url>https://github.com/farpost/groovy-shell-server</url>
 
-	<description>Groovy shell server</description>
+	<description>Groovy shell server allows to start Groovy Shell inside your application for debug and diagnostic purposes</description>
 
 	<organization>
 		<name>FarPost</name>
-		<url>http://farpost.com</url>
+		<url>https://farpost.com</url>
 	</organization>
 
 	<properties>
+		<revision>0.0.0-LOCAL</revision>
+		<versions.lombok>1.18.48</versions.lombok>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<maven.compiler.release>21</maven.compiler.release>
 	</properties>
 
 	<scm>
-		<url>git@github.com:bazhenov/groovy-shell-server</url>
-		<connection>scm:git:git@github.com:bazhenov/groovy-shell-server.git</connection>
-		<developerConnection>scm:git:git@github.com:bazhenov/groovy-shell-server.git</developerConnection>
+		<url>https://github.com/farpost/groovy-shell-server</url>
+		<connection>scm:git:git://github.com/farpost/groovy-shell-server.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/farpost/groovy-shell-server.git</developerConnection>
 	</scm>
 
 	<developers>
@@ -38,14 +39,14 @@
 
 	<licenses>
 		<license>
-			<name>The Apache Software License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
 
 	<modules>
-		<module>groovy-shell-server</module>
+		<module>groovy-shell</module>
 	</modules>
 
 	<build>
@@ -54,41 +55,113 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.13.0</version>
+				<version>3.16.0</version>
 				<configuration>
-					<release>21</release>
 					<encoding>UTF-8</encoding>
+					<release>25</release>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${versions.lombok}</version>
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>3.3.1</version>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.9.0</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				</configuration>
 				<executions>
 					<execution>
-						<phase>install</phase>
+						<id>flatten</id>
+						<phase>process-resources</phase>
 						<goals>
-							<goal>jar</goal>
+							<goal>flatten</goal>
 						</goals>
 					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.11.2</version>
-				<executions>
 					<execution>
-						<phase>install</phase>
+						<id>flatten.clean</id>
+						<phase>clean</phase>
 						<goals>
-							<goal>jar</goal>
+							<goal>clean</goal>
 						</goals>
-						<configuration>
-							<doclint>none</doclint>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.4.0</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.12.0</version>
+						<executions>
+							<execution>
+								<id>attach-javadoc</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.2.8</version>
+						<configuration>
+							<gpgArguments>
+								<arg>--batch</arg>
+								<arg>--pinentry-mode</arg>
+								<arg>loopback</arg>
+							</gpgArguments>
+						</configuration>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.12.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>true</autoPublish>
+							<waitUntil>published</waitUntil>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

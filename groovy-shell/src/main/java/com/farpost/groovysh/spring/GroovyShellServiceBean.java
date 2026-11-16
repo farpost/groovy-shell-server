@@ -1,6 +1,6 @@
-package me.bazhenov.groovysh.spring;
+package com.farpost.groovysh.spring;
 
-import me.bazhenov.groovysh.GroovyShellService;
+import com.farpost.groovysh.GroovyShellService;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanIsAbstractException;
@@ -86,6 +86,7 @@ public class GroovyShellServiceBean implements InitializingBean, DisposableBean,
   @Override
   public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
     this.applicationContext = applicationContext;
+    service.setClassLoader(applicationContext.getClassLoader());
   }
 
   @Override

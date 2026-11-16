@@ -1,6 +1,8 @@
 Groovysh Server
 ===============
 
+[![Maven Central](https://img.shields.io/maven-central/v/com.farpost/groovy-shell.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.farpost/groovy-shell)
+
 Introduction
 ------------
 
@@ -16,32 +18,35 @@ Groovy shell server uses `groovysh` API inside, so all features of `groovysh` (a
 Installation
 ------------
 
-### Java 21+
-
-Current versions of the library require JDK 21 or higher. Include the following dependency in your `pom.xml`:
-
-    <repositories>
-		<repository>
-		    <id>jitpack.io</id>
-		    <url>https://jitpack.io</url>
-		</repository>
-	</repositories>
+Just include following dependency in your `pom.xml` (latest version is shown by the Maven Central badge above):
 
 	<dependency>
-		<groupId>com.github.farpost</groupId>
-		<artifactId>groovy-shell-server</artifactId>
-		<version>2.2.6-jdk21</version>
+		<groupId>com.farpost</groupId>
+		<artifactId>groovy-shell</artifactId>
+		<version>LATEST_VERSION_FROM_BADGE</version>
 	</dependency>
 
-### Java 8 / Legacy
+### Requirements
 
-If you are running on an older JVM (Java 8 - 17), please use the `2.2.x` releases (e.g., `2.2.1`). These versions are stable but do not include features requiring newer JDKs.
+- Java 25 or newer; builds and CI use the current Java 25 LTS line.
+- Groovy 6.0.0 with its JLine 4 based shell.
+- Spring integration uses Spring Framework 7.0.10 (optional).
+- Logging uses SLF4J 2.0.20; the optional runtime backend is Logback 1.6.7.
 
-	<dependency>
-		<groupId>me.bazhenov.groovy-shell</groupId>
-		<artifactId>groovy-shell-server</artifactId>
-		<version>2.2.1</version>
-	</dependency>
+### Upgrading from earlier releases
+
+This release raises the minimum Java version to 25. Upgrade the application runtime before updating the library.
+The SSH transport uses Apache MINA SSHD 2.20.1 and the shell uses the Groovy 6/JLine 4 embedding API.
+Existing bindings, default scripts and SSH authentication remain supported; custom Groovy scripts should be checked
+against the [Groovy 6 release notes](https://groovy-lang.org/releasenotes/groovy-6.0.html).
+
+Do not mix Groovy major versions on one classpath. Align all `org.apache.groovy` artifacts to 6.0.0 and remove older
+`org.codehaus.groovy` artifacts; dependency management supplied by the host application may otherwise override these versions.
+For Spring integration, align the application's Spring dependencies to the same major version. Applications that supply
+their own logging implementation must use an SLF4J 2 compatible provider rather than an SLF4J 1.x binding.
+
+The application ClassLoader is passed explicitly to the embedded Groovy engine so that SSH worker thread context does
+not determine which application classes the shell can see.
 
 Using
 -----
@@ -57,6 +62,11 @@ In your application you should start `GroovyShellService`:
 
 	service.start();
 
+The shell uses the library's ClassLoader by default. Applications with a separate plugin or application loader can
+set it explicitly before starting the service:
+
+	service.setClassLoader(MyApplication.class.getClassLoader());
+
 And destroy it on application exit:
 
 	service.destroy();
@@ -64,8 +74,8 @@ And destroy it on application exit:
 As of 1.5 Groovy shell server use plain `ssh` as a client. So connecting to a groovy shell server as simple as:
 
 	$ ssh 127.1 -p 6789
-	Groovy Shell (2.1.9, JVM: 1.6.0_65)
-	Type 'help' or '\h' for help.
+	Groovy Shell (6.0.0)
+	Type ':help' or ':h' for help.
 	-------------------------------------------------------------------------------
 	groovy:000> (1..10).each { println "Kill all humans!" }
 	Kill all humans!
@@ -81,8 +91,8 @@ As of 1.5 Groovy shell server use plain `ssh` as a client. So connecting to a gr
 	===> 1..10
 	groovy:000>
 
-By default, no authentication is required (any username is allowed to open a SSH connection). You can enable password authentication by creating your own implementation of `org.apache.sshd.server.PasswordAuthenticator` interface and passing an instance to server:
-	
+By default, no authentication is required (any username is allowed to open a SSH connection). You can enable password authentication by creating your own implementation of `org.apache.sshd.server.auth.password.PasswordAuthenticator` interface and passing an instance to server:
+
 	PasswordAuthenticator myPasswordAuthenticator = new MyPasswordAuthenticator();
 	service.setPasswordAuthenticator(myPasswordAuthenticator);
 
@@ -90,7 +100,7 @@ Integrating with Spring
 -----------------------
 You can easily integrate Groovy Shell with Spring container:
 
-	<bean class="me.bazhenov.groovysh.spring.GroovyShellServiceBean"
+	<bean class="com.farpost.groovysh.spring.GroovyShellServiceBean"
 		p:port="6789"
 		p:launchAtStart="true"
 		p:publishContextBeans="true"
@@ -110,7 +120,13 @@ It is also possible to enable password authentication by setting `passwordAuthen
 
 In order to simple run applications you can use `maven-exec` plugin:
 
-	mvn -f groovy-shell-server/pom.xml exec:java -Dexec.mainClass=me.bazhenov.groovysh.Main
+	./mvnw -f groovy-shell/pom.xml exec:java -Dexec.mainClass=com.farpost.groovysh.Main
+
+### Running tests
+
+Integration tests start a real server on a random port and drive `groovysh` over SSH:
+
+	./mvnw test
 
 Management
 ----------
@@ -119,3 +135,66 @@ What if a well-meaning developer fires up a remote shell and accidentally execut
 each GroovyShellService instance registers itself with the default MBeanServer and provides a "killAllClients" operation to kill
 any open client sockets and stop the associated client threads. Thus you can connect with jconsole or your favorite JMX frontend
 to resolve this issue if it arises.
+
+Publishing to Maven Central
+----------------------------
+
+The library is published to Maven Central via [Sonatype Central Portal](https://central.sonatype.com).
+
+### How it works
+
+Publishing involves three independent mechanisms:
+
+- **Namespace verification** — one-time DNS TXT record on `farpost.com` proves ownership of `com.farpost` groupId
+- **GPG signing** — every artifact is signed with a private key; Maven Central verifies signatures against public keys on keyservers
+- **Sonatype token** — authenticates the upload to central.sonatype.com
+
+### Prerequisites
+
+1. **Sonatype token.** Log in to [central.sonatype.com](https://central.sonatype.com), go to Account, click "Generate User Token". Save the username and password — they are shown only once. Export them as environment variables before running deploy:
+
+	```
+	export SONATYPE_USERNAME=<token username>
+	export SONATYPE_PASSWORD=<token password>
+	```
+
+	The deploy uses a project-local `.mvn/settings.xml` that reads these env vars — no need to edit `~/.m2/settings.xml`.
+
+2. **GPG key.** The signing key is stored in the `.keys/` directory (gitignored). No system-level GPG import needed — the Makefile uses the local `GNUPGHOME` directly.
+
+	If setting up on a new machine, just copy the `.keys/` directory from a teammate or from company secrets.
+
+### Publishing a release
+
+```
+make deploy
+```
+
+This runs `./mvnw clean deploy -Prelease -s .mvn/settings.xml -Drevision=<calver>` which:
+
+1. Generates a CalVer version (`YYYY.MM.DD.HHMM`) — every release is unique, no manual version bumps
+2. Compiles code and creates `.jar`
+3. Generates `-sources.jar` and `-javadoc.jar`
+4. Signs everything with GPG (`.asc` files)
+5. Uploads to Sonatype Central Portal
+6. Waits for validation and auto-publishes to Maven Central
+
+### GPG key details
+
+| Parameter   | Value                                   |
+|-------------|-----------------------------------------|
+| Owner       | FarPost <dev@farpost.com>               |
+| Algorithm   | RSA 4096                                |
+| Expires     | 2028-03-26 (extend before expiry)       |
+| Keyservers  | keyserver.ubuntu.com, keys.openpgp.org  |
+| Location    | `.keys/gpg-home/` (GNUPGHOME)           |
+
+To extend the key before expiry:
+
+```
+GNUPGHOME=.keys/gpg-home gpg --edit-key FarPost
+> expire
+> (set new expiry)
+> save
+GNUPGHOME=.keys/gpg-home gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
+```

@@ -10,9 +10,9 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package me.bazhenov.groovysh;
+package com.farpost.groovysh;
 
-import org.apache.groovy.groovysh.Groovysh;
+import lombok.val;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
@@ -24,7 +24,6 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.shell.ShellFactory;
-import org.codehaus.groovy.tools.shell.util.Preferences;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,11 +33,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static jline.TerminalFactory.Flavor.UNIX;
-import static jline.TerminalFactory.registerFlavor;
-import static org.apache.groovy.groovysh.util.PackageHelper.IMPORT_COMPLETION_PREFERENCE_KEY;
 import static org.apache.sshd.common.PropertyResolverUtils.updateProperty;
 import static org.apache.sshd.core.CoreModuleProperties.IDLE_TIMEOUT;
 import static org.apache.sshd.core.CoreModuleProperties.NIO2_READ_TIMEOUT;
@@ -58,10 +55,11 @@ public class GroovyShellService {
   private PasswordAuthenticator passwordAuthenticator;
   private long idleTimeOut = HOURS.toMillis(1);
 
-  static final Session.AttributeKey<Groovysh> SHELL_KEY = new Session.AttributeKey<>();
+  static final Session.AttributeKey<GroovyShellCommand> SHELL_KEY = new Session.AttributeKey<>();
   private List<String> defaultScripts = new ArrayList<>();
   private SshServer sshd;
   private boolean disableImportCompletions = false;
+  private ClassLoader classLoader = GroovyShellService.class.getClassLoader();
   private final AtomicBoolean isServiceAlive = new AtomicBoolean(true);
 
   /**
@@ -77,7 +75,16 @@ public class GroovyShellService {
       throw new IllegalArgumentException("Wrong port number");
     }
     this.port = port;
-    registerFlavor(UNIX, SshTerminal.class);
+  }
+
+  /**
+   * Sets the application class loader used by every new SSH shell and its default scripts.
+   * The default is the loader that loaded this library; Spring integration supplies the context loader.
+   *
+   * @param classLoader non-null application class loader
+   */
+  public void setClassLoader(ClassLoader classLoader) {
+    this.classLoader = requireNonNull(classLoader, "classLoader");
   }
 
   public Map<String, Object> getBindings() {
@@ -131,7 +138,11 @@ public class GroovyShellService {
    * API. So once written it should be removed by hand (you can use groovysh <code>:set</code>
    * command).
    *
-   * @see <a href="https://github.com/bazhenov/groovy-shell-server/issues/26">groovy-shell-server
+   * <p>
+   * With Groovy 6 this disables all interactive completion for each new session, without writing
+   * JVM-wide Java Preferences. The historical persistence behavior above applies to older releases.
+   *
+   * @see <a href="https://github.com/farpost/groovy-shell-server/issues/26">groovy-shell-server
    * does not work with jdk11</a>
    */
   public void setDisableImportCompletions(boolean disableImportCompletions) {
@@ -154,9 +165,6 @@ public class GroovyShellService {
   public synchronized void start() throws IOException {
     sshd = buildSshServer();
     sshd.start();
-    if (disableImportCompletions) {
-      Preferences.put(IMPORT_COMPLETION_PREFERENCE_KEY, "true");
-    }
   }
 
   private SshServer buildSshServer() {
@@ -185,9 +193,9 @@ public class GroovyShellService {
 
       @Override
       public void sessionClosed(Session session) {
-        Groovysh shell = session.getAttribute(SHELL_KEY);
+        val shell = session.getAttribute(SHELL_KEY);
         if (shell != null) {
-          shell.getRunner().setRunning(false);
+          shell.stop();
         }
       }
     });
@@ -218,7 +226,7 @@ public class GroovyShellService {
 
     @Override
     public Command createShell(ChannelSession channel) {
-      return new GroovyShellCommand(sshd, bindings, defaultScripts, isServiceAlive);
+      return new GroovyShellCommand(sshd, bindings, defaultScripts, isServiceAlive, classLoader, disableImportCompletions);
     }
   }
 }

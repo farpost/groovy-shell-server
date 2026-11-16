@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package com.farpost.groovysh;
 
 import org.apache.sshd.common.channel.exception.SshChannelException;
 
