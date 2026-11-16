@@ -1,6 +1,17 @@
 package com.farpost.groovysh;
 
 import org.apache.sshd.client.SshClient;
+import lombok.val;
+import java.net.URL;
+import java.net.URLClassLoader;
+
+import static javax.tools.ToolProvider.getSystemJavaCompiler;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.writeString;
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.getAllStackTraces;
+import static java.lang.ClassLoader.getSystemClassLoader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,7 +49,7 @@ class GroovyShellServiceTest {
     startService();
     try (ShellClient shell = ShellClient.connect(service.getPort())) {
       assertContains(shell.eval("1 + 41"), "===> 42");
-      assertContains(shell.eval("GroovySystem.version"), "===> 4.");
+      assertContains(shell.eval("GroovySystem.version"), "===> 6.");
     }
   }
 
@@ -152,6 +163,44 @@ class GroovyShellServiceTest {
     assertThrows(ConnectException.class, () -> new Socket("127.0.0.1", port).close());
   }
 
+  @Test
+  void resolvesApplicationClassesWithAnUnrelatedThreadContextLoader(@TempDir Path dir) throws Exception {
+    val packageDir = createDirectories(dir.resolve("isolated"));
+    val source = writeString(packageDir.resolve("ApplicationOnly.java"),
+        "package isolated; public class ApplicationOnly { public static int answer() { return 42; } }");
+    assertEquals(0, getSystemJavaCompiler().run(null, null, null, "-d", dir.toString(), source.toString()));
+    val script = writeString(dir.resolve("init.groovy"),
+        "fromDefaultScript = isolated.ApplicationOnly.answer()");
+    try (val loader = new URLClassLoader(new URL[] { dir.toUri().toURL() }, getSystemClassLoader())) {
+      service = newService();
+      service.setClassLoader(loader);
+      service.addDefaultScript(script.toString());
+      val previous = currentThread().getContextClassLoader();
+      try {
+        currentThread().setContextClassLoader(getSystemClassLoader());
+        service.start();
+        try (val shell = ShellClient.connect(service.getPort())) {
+          assertContains(shell.eval("isolated.ApplicationOnly.answer()"), "===> 42");
+          assertContains(shell.eval("fromDefaultScript"), "===> 42");
+        }
+      } finally {
+        currentThread().setContextClassLoader(previous);
+      }
+    }
+  }
+
+  @Test
+  void isolatesConcurrentSessionBindingsAndOutput() throws Exception {
+    startService();
+    try (val first = ShellClient.connect(service.getPort());
+         val second = ShellClient.connect(service.getPort())) {
+      first.eval("sessionValue = 'first-session'");
+      second.eval("sessionValue = 'second-session'");
+      assertContains(first.eval("sessionValue"), "===> first-session");
+      assertContains(second.eval("sessionValue"), "===> second-session");
+    }
+  }
+
   private void startService() throws IOException {
     service = newService();
     service.start();
@@ -181,6 +230,17 @@ class GroovyShellServiceTest {
             && t.getName().endsWith(nameSuffix));
   }
 
+  private static String threadStacks() {
+    val result = new StringBuilder();
+    for (val entry : getAllStackTraces().entrySet()) {
+      if (entry.getKey().getName().startsWith("GroovySh Client Thread")) {
+        result.append(entry.getKey()).append("\n");
+        for (val frame : entry.getValue()) { result.append(frame).append("\n"); }
+      }
+    }
+    return result.toString();
+  }
+
   static void await(BooleanSupplier condition, String description) {
     long deadline = System.nanoTime() + TIMEOUT.toNanos();
     while (System.nanoTime() < deadline) {
@@ -189,6 +249,6 @@ class GroovyShellServiceTest {
       }
       ShellClient.pause();
     }
-    throw new AssertionError("Timed out waiting for " + description);
+    throw new AssertionError("Timed out waiting for " + description + "\n" + threadStacks());
   }
 }

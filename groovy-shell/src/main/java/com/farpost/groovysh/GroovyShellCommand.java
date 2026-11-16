@@ -2,7 +2,9 @@ package com.farpost.groovysh;
 
 import groovy.lang.Binding;
 import groovy.lang.Closure;
-import org.apache.groovy.groovysh.Groovysh;
+import lombok.val;
+import org.apache.groovy.groovysh.GroovyshOptions;
+import org.apache.groovy.groovysh.jline.GroovyEngine;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.server.Environment;
@@ -10,160 +12,144 @@ import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
-import org.codehaus.groovy.tools.shell.IO;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.slf4j.Logger;
 
 import java.io.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.singletonList;
 import static com.farpost.groovysh.GroovyShellService.SHELL_KEY;
-import static org.codehaus.groovy.tools.shell.IO.Verbosity.DEBUG;
+import static groovy.lang.GroovySystem.getVersion;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static com.farpost.groovysh.EmbeddedGroovyShell.runGroovyShell;
+import static org.jline.reader.LineReader.DISABLE_COMPLETION;
+import static org.slf4j.LoggerFactory.getLogger;
 
 class GroovyShellCommand implements Command {
-
+  private static final Logger logger = getLogger(GroovyShellCommand.class);
   private final SshServer sshd;
   private final Map<String, Object> bindings;
   private final List<String> defaultScripts;
+  private final AtomicBoolean isServiceAlive;
+  private final ClassLoader applicationClassLoader;
+  private final boolean disableImportCompletions;
   private InputStream in;
   private OutputStream out;
   private OutputStream err;
   private ExitCallback callback;
-  private Thread wrapper;
-  private ChannelSession session;
-  private final AtomicBoolean isServiceAlive;
+  private volatile Thread wrapper;
+  private volatile SshTerminal terminal;
 
   GroovyShellCommand(SshServer sshd, Map<String, Object> bindings, List<String> defaultScripts,
-      AtomicBoolean isServiceAlive) {
+      AtomicBoolean isServiceAlive, ClassLoader applicationClassLoader, boolean disableImportCompletions) {
     this.sshd = sshd;
     this.bindings = bindings;
     this.defaultScripts = defaultScripts;
     this.isServiceAlive = isServiceAlive;
+    this.applicationClassLoader = applicationClassLoader;
+    this.disableImportCompletions = disableImportCompletions;
   }
 
   @Override
-  public void setInputStream(InputStream in) {
-    this.in = in;
-  }
+  public void setInputStream(InputStream in) { this.in = in; }
 
   @Override
-  public void setOutputStream(OutputStream out) {
-    this.out = out;
-  }
+  public void setOutputStream(OutputStream out) { this.out = out; }
 
   @Override
-  public void setErrorStream(OutputStream err) {
-    this.err = err;
-  }
+  public void setErrorStream(OutputStream err) { this.err = err; }
 
   @Override
-  public void setExitCallback(ExitCallback callback) {
-    this.callback = callback;
-  }
+  public void setExitCallback(ExitCallback callback) { this.callback = callback; }
 
   @Override
   public void start(ChannelSession session, Environment env) throws IOException {
-    this.session = session;
-    TtyFilterOutputStream out = new TtyFilterOutputStream(this.out, isServiceAlive);
-    TtyFilterOutputStream err = new TtyFilterOutputStream(this.err, isServiceAlive);
-
-    IO io = new IO(in, out, err);
-    io.setVerbosity(DEBUG);
-    Groovysh shell = new Groovysh(createBinding(bindings, out, err), io);
-    shell.setErrorHook(new Closure<Object>(this) {
-      @Override
-      public Object call(Object... args) {
-        if (args[0] instanceof InterruptedIOException || args[0] instanceof SshException) {
-          // Stopping groovysh thread in case of broken client channel
-          shell.getRunner().setRunning(false);
+    val output = new TtyFilterOutputStream(out, isServiceAlive);
+    val errors = new TtyFilterOutputStream(err, isServiceAlive);
+    val stdout = new PrintStream(output, true, UTF_8);
+    val stderr = new PrintStream(errors, true, UTF_8);
+    terminal = new SshTerminal(in, output, env);
+    session.getSession().setAttribute(SHELL_KEY, this);
+    wrapper = new Thread(() -> {
+      // This is the SSH request boundary: a failed script must not terminate the host application.
+      try (val activeTerminal = terminal) {
+        val engine = new GroovyEngine(applicationClassLoader, createBinding(stdout, stderr),
+            new CompilerConfiguration());
+        val options = GroovyshOptions.builder()
+            .engine(engine)
+            .terminal(activeTerminal)
+            .showBanner(false)
+            .prompt("groovy:000> ")
+            .resultHandler((printer, result) -> stdout.println("===> " + result))
+            .errorHandler((error, defaultTrace) -> {
+              if (error instanceof InterruptedIOException || error instanceof SshException) {
+                // Stopping groovysh thread in case of broken client channel
+                stop();
+              }
+              stderr.println(error.getClass().getName() + ": " + error.getMessage());
+            })
+            .onReaderReady(reader -> {
+              if (disableImportCompletions) {
+                reader.setVariable(DISABLE_COMPLETION, true);
+              }
+            })
+            .build();
+        try {
+          // Set a "no-op closure so we don't get per-line value output when evaluating the default script
+          // Groovy 6 separates engine execution from rendering, so no result hook is invoked here.
+          for (val script : defaultScripts) {
+            engine.execute(new File(script), new Object[0]);
+          }
+        } catch (Exception e) {
+          logger.warn("Unable to load default scripts", e);
+          stderr.println("Unable to load default scripts: " + e.getClass().getName() + ": " + e.getMessage());
         }
-        return shell.getDefaultErrorHook().call(args);
-      }
-    });
-
-    try {
-      loadDefaultScripts(shell);
-    } catch (Exception e) {
-      createPrintStream(err).println("Unable to load default scripts: "
-          + e.getClass().getName() + ": " + e.getMessage());
-    }
-
-    this.session.setAttribute(SHELL_KEY, shell);
-
-    Runnable runnable = () -> {
-      try {
-        SshTerminal.registerEnvironment(env);
-        shell.run("");
-        callback.onExit(0);
-      } catch (RuntimeException | Error e) {
+        // Restoring original result hook
+        // The interactive result handler is installed when the REPL starts.
+        stdout.println("Groovy Shell (" + getVersion() + ")");
+        callback.onExit(runGroovyShell(options));
+      } catch (Exception | LinkageError e) {
+        logger.warn("Groovy shell session failed", e);
         callback.onExit(-1, e.getMessage());
       }
-    };
-    wrapper = newThread(runnable, this.session);
+    }, "GroovySh Client Thread: " + session.getSession().getIoSession().getRemoteAddress());
+    wrapper.setContextClassLoader(applicationClassLoader);
     wrapper.start();
   }
 
-  private static Thread newThread(Runnable r, ChannelSession session) {
-    String address = session.getSession().getIoSession().getRemoteAddress().toString();
-    String threadName = "GroovySh Client Thread: " + address;
-    return new Thread(r, threadName);
-  }
-
-  private Binding createBinding(Map<String, Object> objects, OutputStream out, OutputStream err)
-      throws UnsupportedEncodingException {
-    Binding binding = new Binding();
-
-    if (objects != null) {
-      for (Map.Entry<String, Object> row : objects.entrySet()) {
+  private Binding createBinding(PrintStream stdout, PrintStream stderr) {
+    val binding = new Binding();
+    if (bindings != null) {
+      for (val row : bindings.entrySet()) {
         binding.setVariable(row.getKey(), row.getValue());
       }
     }
-
-    binding.setVariable("out", createPrintStream(out));
-    binding.setVariable("err", createPrintStream(err));
+    binding.setVariable("out", stdout);
+    binding.setVariable("err", stderr);
     binding.setVariable("activeSessions", new Closure<List<AbstractSession>>(this) {
       @Override
-      public List<AbstractSession> call() {
-        return sshd.getActiveSessions();
-      }
+      public List<AbstractSession> call() { return sshd.getActiveSessions(); }
     });
-
     return binding;
   }
 
-  private static PrintStream createPrintStream(OutputStream out)
-      throws UnsupportedEncodingException {
-    return new PrintStream(out, true, "utf8");
-  }
-
-  @SuppressWarnings({"unchecked", "serial"})
-  private void loadDefaultScripts(Groovysh shell) {
-    if (!defaultScripts.isEmpty()) {
-      Closure<Groovysh> defaultResultHook = shell.getResultHook();
-
+  void stop() {
+    val currentTerminal = terminal;
+    if (currentTerminal != null) {
       try {
-        // Set a "no-op closure so we don't get per-line value output when evaluating the default script
-        shell.setResultHook(new Closure<Groovysh>(this) {
-          @Override
-          public Groovysh call(Object... args) {
-            return shell;
-          }
-        });
-
-        org.apache.groovy.groovysh.Command cmd = shell.getRegistry().find(":load");
-        for (String script : defaultScripts) {
-          cmd.execute(singletonList(script));
-        }
-      } finally {
-        // Restoring original result hook
-        shell.setResultHook(defaultResultHook);
+        currentTerminal.endOfInput();
+      } catch (IOException e) {
+        logger.warn("Unable to end SSH terminal input", e);
       }
+    }
+    val thread = wrapper;
+    if (thread != null) {
+      thread.interrupt();
     }
   }
 
   @Override
-  public void destroy(ChannelSession channel) {
-    wrapper.interrupt();
-  }
+  public void destroy(ChannelSession channel) { stop(); }
 }

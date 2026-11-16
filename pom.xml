@@ -18,6 +18,7 @@
 
 	<properties>
 		<revision>0.0.0-LOCAL</revision>
+		<versions.lombok>1.18.48</versions.lombok>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
@@ -54,17 +55,23 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
+				<version>3.16.0</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
-					<source>1.8</source>
-					<target>1.8</target>
+					<release>25</release>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${versions.lombok}</version>
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>
-				<version>1.6.0</version>
+				<version>1.9.0</version>
 				<configuration>
 					<updatePomFile>true</updatePomFile>
 					<flattenMode>resolveCiFriendliesOnly</flattenMode>
@@ -97,7 +104,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.3.1</version>
+						<version>3.4.0</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>
@@ -110,7 +117,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.6.3</version>
+						<version>3.12.0</version>
 						<executions>
 							<execution>
 								<id>attach-javadoc</id>
@@ -123,7 +130,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.2.7</version>
+						<version>3.2.8</version>
 						<configuration>
 							<gpgArguments>
 								<arg>--batch</arg>

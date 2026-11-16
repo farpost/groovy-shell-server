@@ -28,34 +28,25 @@ Just include following dependency in your `pom.xml` (latest version is shown by 
 
 ### Requirements
 
-- Java 8 or newer (tested on 8, 11, 21 and 24)
-- Groovy 4.x — the library depends on `org.apache.groovy:groovy` and `org.apache.groovy:groovy-groovysh`
+- Java 25 or newer; builds and CI use the current Java 25 LTS line.
+- Groovy 6.0.0 with its JLine 4 based shell.
+- Spring integration uses Spring Framework 7.0.10 (optional).
+- Logging uses SLF4J 2.0.20; the optional runtime backend is Logback 1.6.7.
 
-### Upgrading from Groovy 3 based releases
+### Upgrading from earlier releases
 
-Releases up to and including `2026.04.09.0219` were built on Groovy 3 (`org.codehaus.groovy`). Newer releases use Groovy 4,
-which is published under a different groupId (`org.apache.groovy`). Groovy 3 does not run on Java 21+, so upgrading is
-recommended, but keep in mind:
+This release raises the minimum Java version to 25. Upgrade the application runtime before updating the library.
+The SSH transport uses Apache MINA SSHD 2.20.1 and the shell uses the Groovy 6/JLine 4 embedding API.
+Existing bindings, default scripts and SSH authentication remain supported; custom Groovy scripts should be checked
+against the [Groovy 6 release notes](https://groovy-lang.org/releasenotes/groovy-6.0.html).
 
-- **Do not mix Groovy 3 and Groovy 4 on one classpath.** Because the groupIds differ, Maven and Gradle will not detect the
-  conflict and both versions end up on the classpath, failing at runtime with `LinkageError` / `NoSuchMethodError`.
-  Check with `./mvnw dependency:tree | grep -i groovy` and exclude or upgrade any `org.codehaus.groovy` artifacts
-  (for example, Spring Boot 2.x manages Groovy 3, Spring Boot 3.x manages Groovy 4):
+Do not mix Groovy major versions on one classpath. Align all `org.apache.groovy` artifacts to 6.0.0 and remove older
+`org.codehaus.groovy` artifacts; dependency management supplied by the host application may otherwise override these versions.
+For Spring integration, align the application's Spring dependencies to the same major version. Applications that supply
+their own logging implementation must use an SLF4J 2 compatible provider rather than an SLF4J 1.x binding.
 
-		<dependency>
-			<groupId>some.group</groupId>
-			<artifactId>library-pulling-groovy-3</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.codehaus.groovy</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-- **Default scripts and shell snippets may need updates.** Groovy 4 removed legacy packages, e.g.
-  `groovy.util.XmlSlurper` → `groovy.xml.XmlSlurper`, `groovy.util.AntBuilder` → `groovy.ant.AntBuilder`.
-  See the [Groovy 4 release notes](https://groovy-lang.org/releasenotes/groovy-4.0.html) for the full list.
+The application ClassLoader is passed explicitly to the embedded Groovy engine so that SSH worker thread context does
+not determine which application classes the shell can see.
 
 Using
 -----
@@ -71,6 +62,11 @@ In your application you should start `GroovyShellService`:
 
 	service.start();
 
+The shell uses the library's ClassLoader by default. Applications with a separate plugin or application loader can
+set it explicitly before starting the service:
+
+	service.setClassLoader(MyApplication.class.getClassLoader());
+
 And destroy it on application exit:
 
 	service.destroy();
@@ -78,7 +74,7 @@ And destroy it on application exit:
 As of 1.5 Groovy shell server use plain `ssh` as a client. So connecting to a groovy shell server as simple as:
 
 	$ ssh 127.1 -p 6789
-	Groovy Shell (4.0.33, JVM: 21.0.8)
+	Groovy Shell (6.0.0)
 	Type ':help' or ':h' for help.
 	-------------------------------------------------------------------------------
 	groovy:000> (1..10).each { println "Kill all humans!" }
@@ -202,4 +198,3 @@ GNUPGHOME=.keys/gpg-home gpg --edit-key FarPost
 > save
 GNUPGHOME=.keys/gpg-home gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
 ```
-
