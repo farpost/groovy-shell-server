@@ -58,7 +58,7 @@
 				<version>3.16.0</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
-					<release>25</release>
+					<release>17</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
