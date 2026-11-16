@@ -26,6 +26,37 @@ Just include following dependency in your `pom.xml` (latest version is shown by 
 		<version>LATEST_VERSION_FROM_BADGE</version>
 	</dependency>
 
+### Requirements
+
+- Java 8 or newer (tested on 8, 11, 21 and 24)
+- Groovy 4.x — the library depends on `org.apache.groovy:groovy` and `org.apache.groovy:groovy-groovysh`
+
+### Upgrading from Groovy 3 based releases
+
+Releases up to and including `2026.04.09.0219` were built on Groovy 3 (`org.codehaus.groovy`). Newer releases use Groovy 4,
+which is published under a different groupId (`org.apache.groovy`). Groovy 3 does not run on Java 21+, so upgrading is
+recommended, but keep in mind:
+
+- **Do not mix Groovy 3 and Groovy 4 on one classpath.** Because the groupIds differ, Maven and Gradle will not detect the
+  conflict and both versions end up on the classpath, failing at runtime with `LinkageError` / `NoSuchMethodError`.
+  Check with `./mvnw dependency:tree | grep -i groovy` and exclude or upgrade any `org.codehaus.groovy` artifacts
+  (for example, Spring Boot 2.x manages Groovy 3, Spring Boot 3.x manages Groovy 4):
+
+		<dependency>
+			<groupId>some.group</groupId>
+			<artifactId>library-pulling-groovy-3</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.codehaus.groovy</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+- **Default scripts and shell snippets may need updates.** Groovy 4 removed legacy packages, e.g.
+  `groovy.util.XmlSlurper` → `groovy.xml.XmlSlurper`, `groovy.util.AntBuilder` → `groovy.ant.AntBuilder`.
+  See the [Groovy 4 release notes](https://groovy-lang.org/releasenotes/groovy-4.0.html) for the full list.
+
 Using
 -----
 
@@ -47,8 +78,8 @@ And destroy it on application exit:
 As of 1.5 Groovy shell server use plain `ssh` as a client. So connecting to a groovy shell server as simple as:
 
 	$ ssh 127.1 -p 6789
-	Groovy Shell (2.1.9, JVM: 1.6.0_65)
-	Type 'help' or '\h' for help.
+	Groovy Shell (4.0.33, JVM: 21.0.8)
+	Type ':help' or ':h' for help.
 	-------------------------------------------------------------------------------
 	groovy:000> (1..10).each { println "Kill all humans!" }
 	Kill all humans!
@@ -64,7 +95,7 @@ As of 1.5 Groovy shell server use plain `ssh` as a client. So connecting to a gr
 	===> 1..10
 	groovy:000>
 
-By default, no authentication is required (any username is allowed to open a SSH connection). You can enable password authentication by creating your own implementation of `org.apache.sshd.server.PasswordAuthenticator` interface and passing an instance to server:
+By default, no authentication is required (any username is allowed to open a SSH connection). You can enable password authentication by creating your own implementation of `org.apache.sshd.server.auth.password.PasswordAuthenticator` interface and passing an instance to server:
 
 	PasswordAuthenticator myPasswordAuthenticator = new MyPasswordAuthenticator();
 	service.setPasswordAuthenticator(myPasswordAuthenticator);
@@ -94,6 +125,12 @@ It is also possible to enable password authentication by setting `passwordAuthen
 In order to simple run applications you can use `maven-exec` plugin:
 
 	./mvnw -f groovy-shell/pom.xml exec:java -Dexec.mainClass=com.farpost.groovysh.Main
+
+### Running tests
+
+Integration tests start a real server on a random port and drive `groovysh` over SSH:
+
+	./mvnw test
 
 Management
 ----------
