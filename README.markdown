@@ -28,14 +28,15 @@ Just include following dependency in your `pom.xml` (latest version is shown by 
 
 ### Requirements
 
-- Java 25 or newer; builds and CI use the current Java 25 LTS line.
+- Java 17 or newer; CI covers Java 17, 21 and 25. Release artifacts are built on JDK 25 with Java 17 bytecode.
 - Groovy 6.0.0 with its JLine 4 based shell.
 - Spring integration uses Spring Framework 7.0.10 (optional).
 - Logging uses SLF4J 2.0.20; the optional runtime backend is Logback 1.6.7.
 
 ### Upgrading from earlier releases
 
-This release raises the minimum Java version to 25. Upgrade the application runtime before updating the library.
+This release supports Java 17 and newer. Earlier Groovy 6-based releases of this library required Java 25; use a newer release with
+Java 17 support when running on Java 17 or 21. Applications on Java 8 or 11 still need a runtime upgrade.
 The SSH transport uses Apache MINA SSHD 2.20.1 and the shell uses the Groovy 6/JLine 4 embedding API.
 Existing bindings, default scripts and SSH authentication remain supported; custom Groovy scripts should be checked
 against the [Groovy 6 release notes](https://groovy-lang.org/releasenotes/groovy-6.0.html).
