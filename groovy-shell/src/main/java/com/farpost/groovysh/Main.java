@@ -1,4 +1,4 @@
-package me.bazhenov.groovysh;
+package com.farpost.groovysh;
 
 import java.io.IOException;
 
