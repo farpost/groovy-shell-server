@@ -1,5 +1,7 @@
 .PHONY: deploy
 
+VERSION ?= $(shell date -u +%Y.%m.%d.%H%M)
+
 MAVEN_OPTS=--add-opens=java.base/java.util=ALL-UNNAMED\
 	--add-opens=java.base/java.lang.reflect=ALL-UNNAMED\
 	--add-opens=java.base/java.text=ALL-UNNAMED\
@@ -10,6 +12,5 @@ MAVEN_OPTS=--add-opens=java.base/java.util=ALL-UNNAMED\
 # and a long $(CURDIR) path can exceed it.
 deploy:
 	rm -rf /tmp/gpg-deploy && cp -r "$(CURDIR)/.keys/gpg-home" /tmp/gpg-deploy && chmod 700 /tmp/gpg-deploy
-	VERSION=$$(date +%Y.%m.%d.%H%M) && \
-		MAVEN_OPTS="${MAVEN_OPTS}" GNUPGHOME="/tmp/gpg-deploy" ./mvnw clean deploy -Prelease -s .mvn/settings.xml -Drevision=$$VERSION
+	MAVEN_OPTS="${MAVEN_OPTS}" GNUPGHOME="/tmp/gpg-deploy" ./mvnw clean deploy -Prelease -s .mvn/settings.xml -Drevision="$(VERSION)"
 	rm -rf /tmp/gpg-deploy

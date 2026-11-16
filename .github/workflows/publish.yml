@@ -5,6 +5,13 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
 jobs:
   publish:
     if: github.repository == 'farpost/groovy-shell-server'
@@ -12,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 25
         uses: actions/setup-java@v5
@@ -19,6 +28,15 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+
+      - name: Select release version
+        id: version
+        run: echo "version=$(date -u +%Y.%m.%d.%H%M)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: python3 scripts/release_notes.py --version "$VERSION" --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/release-notes.md"
 
       - name: Import GPG key
         env:
@@ -32,4 +50,17 @@ jobs:
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: make deploy
+          VERSION: ${{ steps.version.outputs.version }}
+        run: make deploy VERSION="$VERSION"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: >-
+          gh release create "$VERSION"
+          --repo "$GITHUB_REPOSITORY"
+          --target "$GITHUB_SHA"
+          --title "$VERSION"
+          --notes-file "$RUNNER_TEMP/release-notes.md"
+          --generate-notes

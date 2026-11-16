@@ -10,3 +10,4 @@ pom.xml.versionsBackup
 host.key
 /.keys
 .flattened-pom.xml
+__pycache__/

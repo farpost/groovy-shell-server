@@ -179,6 +179,11 @@ This runs `./mvnw clean deploy -Prelease -s .mvn/settings.xml -Drevision=<calver
 5. Uploads to Sonatype Central Portal
 6. Waits for validation and auto-publishes to Maven Central
 
+The GitHub Actions workflow then creates a [GitHub Release](https://github.com/farpost/groovy-shell-server/releases)
+with the same CalVer version and exact source commit. Release notes combine reviewed migration fragments with
+GitHub's generated change list. Read the release's **Breaking changes** and **Migration** sections before upgrading.
+Local `make deploy` publishes to Maven Central; GitHub Release creation is handled by the workflow.
+
 ### GPG key details
 
 | Parameter   | Value                                   |
