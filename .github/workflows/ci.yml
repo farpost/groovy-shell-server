@@ -29,3 +29,6 @@ jobs:
 
       - name: Build and test
         run: ./mvnw -B verify
+
+      - name: Test release notes generation
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
